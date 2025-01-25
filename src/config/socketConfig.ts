@@ -1,4 +1,4 @@
-import cookie from "cookie";
+import * as cookie from "cookie";
 import { Server } from "http";
 import { RedisClientType } from "redis";
 import { Server as SocketServer } from "socket.io";
@@ -41,13 +41,14 @@ const socketConfig = (server: Server) => {
     console.log("engine");
     const cookies = cookie.parse(request.headers.cookie || "");
     if (!cookies["user.sid"]) {
+      let isDev = process.env.ENV === "dev";
       const setCookieHeader = cookie.serialize(
         "user.sid",
         generateRandomString(16),
         {
           httpOnly: false,
-          sameSite: "strict",
-          path: "/",
+          sameSite: isDev ? "strict" : "none",
+          domain: process.env.COOKIE_DOMAIN,
           maxAge: 24 * 60 * 60, // 1 day in seconds
         }
       );
