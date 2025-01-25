@@ -1,0 +1,23 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ErrorCodes = void 0;
+var ErrorCodes;
+(function (ErrorCodes) {
+    ErrorCodes[ErrorCodes["bad_request"] = 400] = "bad_request";
+    ErrorCodes[ErrorCodes["unauthenticated"] = 401] = "unauthenticated";
+    ErrorCodes[ErrorCodes["unauthorized"] = 403] = "unauthorized";
+    ErrorCodes[ErrorCodes["not_found"] = 404] = "not_found";
+    ErrorCodes[ErrorCodes["validation_failed"] = 406] = "validation_failed";
+    ErrorCodes[ErrorCodes["locked"] = 423] = "locked";
+    ErrorCodes[ErrorCodes["too_many_requests"] = 429] = "too_many_requests";
+    ErrorCodes[ErrorCodes["server_error"] = 500] = "server_error";
+    ErrorCodes[ErrorCodes["service_unavailable"] = 503] = "service_unavailable";
+    ErrorCodes[ErrorCodes["mongoose_validation"] = 510] = "mongoose_validation";
+    ErrorCodes[ErrorCodes["mongoose_cast"] = 511] = "mongoose_cast";
+    ErrorCodes[ErrorCodes["mongoose_mongo"] = 512] = "mongoose_mongo";
+    ErrorCodes[ErrorCodes["mongoose_document_not_found"] = 513] = "mongoose_document_not_found";
+    ErrorCodes[ErrorCodes["mongoose_unknown"] = 514] = "mongoose_unknown";
+    ErrorCodes[ErrorCodes["axios_response"] = 520] = "axios_response";
+    ErrorCodes[ErrorCodes["axios_request"] = 521] = "axios_request";
+    ErrorCodes[ErrorCodes["axios_unknown"] = 523] = "axios_unknown";
+})(ErrorCodes || (exports.ErrorCodes = ErrorCodes = {}));
