@@ -49,6 +49,7 @@ const socketConfig = (server: Server) => {
           httpOnly: false,
           sameSite: isDev ? "strict" : "none",
           secure: true,
+          path: "/",
           domain: process.env.COOKIE_DOMAIN,
           maxAge: 24 * 60 * 60, // 1 day in seconds
         }
