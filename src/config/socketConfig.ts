@@ -1,6 +1,6 @@
 import * as cookie from "cookie";
 import { Server } from "http";
-import { RedisClientType } from "redis";
+import Redis from "ioredis";
 import { Server as SocketServer } from "socket.io";
 import {
   handleFetchMessages,
@@ -12,10 +12,10 @@ import { generateRandomString } from "../utils/random";
 import { messageModel } from "./interfaces";
 import { getRedisClient } from "./redisConfig";
 
+const redisParentClient: Redis = getRedisClient() as Redis;
+
 const socketConfig = (server: Server) => {
   const allowedOrigins: string[] = process.env.CORS_DOMAIN!.split(",");
-  const redisParentClient: RedisClientType =
-    getRedisClient() as RedisClientType;
 
   const io = new SocketServer(server, {
     cors: {
@@ -81,9 +81,6 @@ const socketConfig = (server: Server) => {
   });
 
   io.on("connection", async (socket) => {
-    console.log("connection");
-    const redisClient = redisParentClient.duplicate();
-    redisClient.connect();
     // if (redisClient.isOpen) {
     //   console.log("Redis Client is already connected");
     // } else {
@@ -92,13 +89,12 @@ const socketConfig = (server: Server) => {
       console.log("socket connected", socket.id);
       // handle new user added
       let cookie = socket.handshake.auth.cookie;
-      await handleNewUser(io, socket, redisClient, cookie);
+      await handleNewUser(io, socket, redisParentClient, cookie);
 
       // handle user leave
       socket.on("disconnect", async () => {
         console.log("disconnected");
-        await handleUserOffline(io, redisClient, cookie);
-        redisClient.disconnect();
+        await handleUserOffline(io, redisParentClient, cookie);
       });
 
       // handle message send
@@ -106,14 +102,20 @@ const socketConfig = (server: Server) => {
         messageModel,
         async (data: { receiver: string; message: string }) => {
           let { message, receiver } = data;
-          await handleSendMessage(io, redisClient, cookie, receiver, message);
+          await handleSendMessage(
+            io,
+            redisParentClient,
+            cookie,
+            receiver,
+            message
+          );
         }
       );
 
       // handle message fetch
       socket.on("messagesFetch", async (data: { recipientId: string }) => {
         let { recipientId } = data;
-        await handleFetchMessages(io, redisClient, cookie, recipientId);
+        await handleFetchMessages(io, redisParentClient, cookie, recipientId);
       });
     } catch (e) {
       let message = "Some Error Occured";
@@ -125,4 +127,4 @@ const socketConfig = (server: Server) => {
   });
 };
 
-export { socketConfig };
+export { redisParentClient, socketConfig };

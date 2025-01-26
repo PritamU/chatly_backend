@@ -1,4 +1,4 @@
-import { RedisClientType } from "redis";
+import Redis from "ioredis";
 import { Server, Socket } from "socket.io";
 import { generateUsername } from "unique-username-generator";
 import {
@@ -11,11 +11,11 @@ import { generateMessageModel } from "../utils/messageModelGenerator";
 const handleNewUser = async (
   io: Server,
   socket: Socket,
-  redisClient: RedisClientType,
+  redisClient: Redis,
   id: string
 ) => {
   try {
-    let users: string[] | null = await redisClient.sMembers(userModel);
+    let users: string[] | null = await redisClient.smembers(userModel);
     if (!users) {
       users = [];
     }
@@ -48,7 +48,7 @@ const handleNewUser = async (
       //     currentSocketId: socket.id,
       //   })
       // );
-      await redisClient.sAdd(
+      await redisClient.sadd(
         userModel,
         JSON.stringify({
           id,
@@ -59,8 +59,8 @@ const handleNewUser = async (
         })
       );
     } else {
-      await redisClient.sRem(userModel, dataToRemove);
-      await redisClient.sAdd(userModel, dataToAdd);
+      await redisClient.srem(userModel, dataToRemove);
+      await redisClient.sadd(userModel, dataToAdd);
     }
     await broadcastOnlineUsers(io, redisClient);
   } catch (e) {
@@ -74,11 +74,11 @@ const handleNewUser = async (
 
 const handleUserOffline = async (
   io: Server,
-  redisClient: RedisClientType,
+  redisClient: Redis,
   id: string
 ) => {
   try {
-    let usersData: string[] | null = await redisClient.sMembers(userModel);
+    let usersData: string[] | null = await redisClient.smembers(userModel);
     if (!usersData) {
       usersData = [];
     }
@@ -97,8 +97,8 @@ const handleUserOffline = async (
     });
 
     if (dataToAdd && dataToRemove) {
-      await redisClient.sRem(userModel, dataToRemove);
-      await redisClient.sAdd(userModel, dataToAdd);
+      await redisClient.srem(userModel, dataToRemove);
+      await redisClient.sadd(userModel, dataToAdd);
     }
     await broadcastOnlineUsers(io, redisClient);
   } catch (e) {
@@ -112,12 +112,12 @@ const handleUserOffline = async (
 
 const handleFetchMessages = async (
   io: Server,
-  redisClient: RedisClientType,
+  redisClient: Redis,
   user1: string,
   user2: string
 ) => {
   try {
-    const users: string[] = await redisClient.sMembers(userModel);
+    const users: string[] = await redisClient.smembers(userModel);
     for (let userItem of users) {
       const userInUnknownFormat: unknown = JSON.parse(userItem) as unknown;
       const userInRequiredFormat: UserInterface =
@@ -126,8 +126,8 @@ const handleFetchMessages = async (
       userInRequiredFormat.unreadMessages = unreadMessages.filter(
         (item) => item !== user2
       );
-      await redisClient.sRem(userModel, userItem);
-      await redisClient.sAdd(userModel, JSON.stringify(userInRequiredFormat));
+      await redisClient.srem(userModel, userItem);
+      await redisClient.sadd(userModel, JSON.stringify(userInRequiredFormat));
     }
     await broadcastMessages(io, redisClient, user1, user2);
     await broadcastOnlineUsers(io, redisClient);
@@ -142,7 +142,7 @@ const handleFetchMessages = async (
 
 const handleSendMessage = async (
   io: Server,
-  redisClient: RedisClientType,
+  redisClient: Redis,
   sender: string,
   receiver: string,
   message: string
@@ -150,10 +150,10 @@ const handleSendMessage = async (
   try {
     let initiatorUserId = sender;
     let messageModel = generateMessageModel(sender, receiver);
-    let messages: string[] = await redisClient.sMembers(messageModel);
+    let messages: string[] = await redisClient.smembers(messageModel);
     if (messages.length === 0) {
       messageModel = generateMessageModel(receiver, sender);
-      messages = await redisClient.sMembers(messageModel);
+      messages = await redisClient.smembers(messageModel);
     }
     if (messages.length > 0) {
       initiatorUserId = receiver;
@@ -169,9 +169,9 @@ const handleSendMessage = async (
       receiver,
       message,
     };
-    await redisClient.sAdd(messageModel, JSON.stringify(newMessage));
+    await redisClient.sadd(messageModel, JSON.stringify(newMessage));
 
-    let users: string[] | null = await redisClient.sMembers(userModel);
+    let users: string[] | null = await redisClient.smembers(userModel);
 
     if (!users) {
       users = [];
@@ -187,8 +187,8 @@ const handleSendMessage = async (
       if (userInRequiredFormat.id === receiver) {
         if (!userInRequiredFormat.unreadMessages.includes(sender)) {
           userInRequiredFormat.unreadMessages.push(sender);
-          await redisClient.sRem(userModel, userItem);
-          await redisClient.sAdd(
+          await redisClient.srem(userModel, userItem);
+          await redisClient.sadd(
             userModel,
             JSON.stringify(userInRequiredFormat)
           );
@@ -214,11 +214,8 @@ const handleSendMessage = async (
 };
 
 // Broadcast online users to all connected clients
-const broadcastOnlineUsers = async (
-  io: Server,
-  redisClient: RedisClientType
-) => {
-  let onlineUsers: string[] | null = await redisClient.sMembers(userModel);
+const broadcastOnlineUsers = async (io: Server, redisClient: Redis) => {
+  let onlineUsers: string[] | null = await redisClient.smembers(userModel);
   if (!onlineUsers) {
     onlineUsers = [];
   }
@@ -238,15 +235,15 @@ const broadcastOnlineUsers = async (
 // Broadcast messages to specific clients
 const broadcastMessages = async (
   io: Server,
-  redisClient: RedisClientType,
+  redisClient: Redis,
   user1: string,
   user2: string
 ) => {
   let messageModel = generateMessageModel(user1, user2);
-  let messages: string[] = await redisClient.sMembers(messageModel);
+  let messages: string[] = await redisClient.smembers(messageModel);
   if (messages.length === 0) {
     messageModel = generateMessageModel(user2, user1);
-    messages = await redisClient.sMembers(messageModel);
+    messages = await redisClient.smembers(messageModel);
   }
 
   let messageToBeSent: MessageInterface[] = [];

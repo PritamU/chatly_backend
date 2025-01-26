@@ -1,15 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { RedisClientType } from "redis";
 import { UserInterface, userModel } from "../config/interfaces";
-import { getRedisClient } from "../config/redisConfig";
+import { redisParentClient as redisClient } from "../config/socketConfig";
 import { ErrorCodes } from "../constants/errorCodes";
 
 const userAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const redisClient: RedisClientType = getRedisClient() as RedisClientType;
-    redisClient.connect();
-
     let cookie = req.cookies;
     let userId = cookie["user.sid"];
     if (!userId) {
@@ -17,7 +13,7 @@ const userAuth = async (req: Request, res: Response, next: NextFunction) => {
         createHttpError(ErrorCodes.unauthenticated, "Authentication Required!")
       );
     }
-    let usersData: string[] | null = await redisClient.sMembers(userModel);
+    let usersData: string[] | null = await redisClient.smembers(userModel);
     if (!usersData) {
       throw new Error("No User Found!");
     }
@@ -51,8 +47,6 @@ const userAuth = async (req: Request, res: Response, next: NextFunction) => {
 
 const getUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const redisClient: RedisClientType = getRedisClient() as RedisClientType;
-    redisClient.connect();
     let cookie = req.cookies;
     let userId = cookie["user.sid"];
     let { chatUserId }: { chatUserId?: string } = req.params;
@@ -65,7 +59,7 @@ const getUser = async (req: Request, res: Response, next: NextFunction) => {
       return next(createHttpError(ErrorCodes.not_found, "User ID Required!"));
     }
 
-    let usersData: string[] | null = await redisClient.sMembers(userModel);
+    let usersData: string[] | null = await redisClient.smembers(userModel);
 
     if (!usersData) {
       throw new Error("No User Found!");
