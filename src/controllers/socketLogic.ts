@@ -38,16 +38,16 @@ const handleNewUser = async (
     });
     if (!userExists) {
       let name = generateUsername(" ");
-      let count = await redisClient.sRem(
-        userModel,
-        JSON.stringify({
-          id,
-          name,
-          isOnline: true,
-          unreadMessages: [],
-          currentSocketId: socket.id,
-        })
-      );
+      // let count = await redisClient.sRem(
+      //   userModel,
+      //   JSON.stringify({
+      //     id,
+      //     name,s
+      //     isOnline: true,
+      //     unreadMessages: [],
+      //     currentSocketId: socket.id,
+      //   })
+      // );
       await redisClient.sAdd(
         userModel,
         JSON.stringify({
@@ -55,6 +55,7 @@ const handleNewUser = async (
           name,
           isOnline: true,
           unreadMessages: [],
+          currentSocketId: socket.id,
         })
       );
     } else {
@@ -191,13 +192,16 @@ const handleSendMessage = async (
             userModel,
             JSON.stringify(userInRequiredFormat)
           );
-          targetSocketId = userInRequiredFormat.currentSocketId;
         }
+        targetSocketId = userInRequiredFormat.currentSocketId;
       }
     }
     // give message alert
     if (targetSocketId) {
-      io.to(targetSocketId).emit("messageAlert", "message");
+      io.to(targetSocketId).emit(
+        "messageAlert",
+        `message on ${new Date().toString()}`
+      );
     }
     await broadcastMessages(io, redisClient, sender, receiver);
   } catch (e) {
