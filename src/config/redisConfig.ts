@@ -1,6 +1,7 @@
 import Redis from "ioredis";
 
-const redisUrl = process.env.REDIS_URL!;
+const redisUrl = `${process.env.REDIS_URL!}`;
+// const redisUrl = `redis://default:i7QVxXlQTXHfeaMZz8ySFkBPxkXYZxym@redis-12690.c305.ap-south-1-1.ec2.redns.redis-cloud.com:12690`;
 
 const getRedisClient = () => {
   // const redisClient: RedisClientType = createClient({

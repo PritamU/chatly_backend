@@ -10,10 +10,9 @@ import { socketConfig } from "./src/config/socketConfig";
 import { ErrorCodes } from "./src/constants/errorCodes";
 import userRoutes from "./src/routes/userRoutes";
 
+dotenv.config();
 const app = express();
 const server = createServer(app);
-
-dotenv.config();
 
 // configure socket
 socketConfig(server);
