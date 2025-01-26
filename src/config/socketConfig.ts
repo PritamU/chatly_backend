@@ -14,8 +14,8 @@ import { getRedisClient } from "./redisConfig";
 
 const socketConfig = (server: Server) => {
   const allowedOrigins: string[] = process.env.CORS_DOMAIN!.split(",");
-  const redisClient: RedisClientType = getRedisClient() as RedisClientType;
-  redisClient.connect();
+  const redisParentClient: RedisClientType =
+    getRedisClient() as RedisClientType;
 
   const io = new SocketServer(server, {
     cors: {
@@ -82,6 +82,8 @@ const socketConfig = (server: Server) => {
 
   io.on("connection", async (socket) => {
     console.log("connection");
+    const redisClient = redisParentClient.duplicate();
+    redisClient.connect();
     // if (redisClient.isOpen) {
     //   console.log("Redis Client is already connected");
     // } else {
@@ -96,7 +98,7 @@ const socketConfig = (server: Server) => {
       socket.on("disconnect", async () => {
         console.log("disconnected");
         await handleUserOffline(io, redisClient, cookie);
-        // redisClient.disconnect();
+        redisClient.disconnect();
       });
 
       // handle message send
